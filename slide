@@ -1,0 +1,132 @@
+function slider(opts){
+        this.warp = opts.dom;
+        this.list = opts.list;
+        //构造三部曲
+        this.init();
+        this.renderDOM();
+        this.bindDOM();
+}
+
+slider.prototype.init = function(){
+    //算出窗口的长宽比
+    this.radio = window.innerHeight/window.innerWidth;
+    //每次滚动的距离
+    this.scalew = window.innerWidth;
+    //当前图片的索引
+    this.idx = 0;
+};
+
+slider.prototype.renderDOM = function() {
+    var wrap = this.warp,
+        data = this.list,
+        scalew = this.scalew,
+        len = data.length;
+        
+        this.outer = document.createElement('ul');
+        for (var i = 0; i<len; i++) {
+            var li = document.createElement('li');
+            var item = data[i];
+            li.style.width = scalew +'px';
+            li.style.height = window.innerHeight +'px';
+            li.style.webkitTransform = 'translate3d('+i*scalew+'px,0,0)';
+            if (item) {
+               if(item['height']/item['width'] > this.radio){
+                    li.innerHTML = "<img height='"+window.innerHeight+"' src='"+item['img']+"'>";
+                }else{
+                    li.innerHTML = "<img width='"+window.innerWidth+"' src='"+item['img']+"'>";
+                }
+            }
+            this.outer.appendChild(li);
+        }
+        this.outer.style.width = scalew +'px';
+        wrap.style.height = window.innerHeight + 'px';
+        wrap.appendChild(this.outer);
+}
+
+slider.prototype.bindDOM = function(){
+    var self = this,
+        scale = self.scalew,
+        outer = self.outer,
+        len = self.list.length,
+
+        starHandler = function(e){
+            self.startX = e.touches[0].pageX;
+            self.offsetX = 0;
+            self.startTime = new Date() + 1;
+        },
+
+        moveHandler = function(e){
+            e.preventDefault();
+            self.offsetX = e.touches[0].pageX - self.startX;
+            var lis = outer.getElementsByTagName('li'),
+                i = self.idx - 1.
+                m = i +3 ;
+                for(i; i<m; i++){
+                    lis[i] && (lis[i].style.webkitTransform = 'translate3d('+((i-self.idx)*scale+self.offsetX)+'px,0,0)');
+                    lis[i] && (lis[i].style.webkitTransition ='none')
+                }
+        },
+
+        endHandler = function() {
+
+            var boundary = scale/6,
+                endTime = new Date() + 1,//事件轴
+                lis = outer.getElementsByTagName('li');
+
+            if (endTime = self.startTime > 800) {
+
+                if (self.offsetX >= boundary) {
+                //进入上一张
+                    self.go('-1');
+                } else if (self.offsetX <= boundary) {
+                    //进入下一页
+                    self.go('+1');
+                } else {
+                    //留在本页
+                    self.go('0')
+                }
+
+            } else {
+                if (self.offsetX > 50) {
+                    self.go('-1');
+                } else if(self.offsetX <-50) {
+                    self.go('+1');   
+                } else {
+                    self.go('0')
+                }
+            }
+            
+        };
+
+    outer.addEventListener('touchstart',starHandler);
+    outer.addEventListener('touchmove',moveHandle r);
+    outer.addEventListener('touchend',endHandler);
+}
+
+slider.prototype.go = function(n) {
+    var idx = this.idx,
+        cidx,
+        lis = this.outer.getElementsByTagName('li'),
+        scale = this.scalew,
+        len = lis.length;
+    
+    if(typeof n == 'number'){
+        cidx = idx;
+    }else if(typeof n == 'string'){
+        cidx = idx + n * 1;
+    }
+    //当索引右超出
+    if(cidx > len -1){
+        cidx = len -1;
+    }else if(cidx < 0){
+        cidx = 0;
+    }
+    this.idx = cidx;
+    lis[cidx].style.webkitTransition = '-webkit-transform 0.2s ease-out';
+    lis[cidx-1] && (lis[cidx-1].style.webkitTransition = '-webkit-transform 0.2s ease-out');
+    lis[cidx+1] && (lis[cidx+1].style.webkitTransition = '-webkit-transform 0.2s ease-out');
+
+    lis[cidx].style.webkitTransform = 'translate3d(0,0,0)';
+    lis[cidx - 1] && (lis[cidx - 1].style.webkitTransform = 'translate3d(-'+scale+'px,0,0)');
+    lis[cidx + 1] && (lis[cidx + 1].style.webkitTransform = 'translate3d('+scale+'px,0,0)');
+}
