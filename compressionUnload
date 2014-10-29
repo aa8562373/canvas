@@ -1,0 +1,104 @@
+    var MAX_HEIGHT = 100;  
+    function render(src){  
+        var image = new Image();
+        image.onload = function(){  
+            var canvas = document.getElementById("myCanvas");  
+            if(image.height > MAX_HEIGHT) {  
+                image.width *= MAX_HEIGHT / image.height;  
+                image.height = MAX_HEIGHT;  
+            }  
+            // 获取 canvas的 2d 环境对象,  
+            var ctx = canvas.getContext("2d");  
+            // canvas清屏  
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  
+            canvas.width = image.width;  
+            canvas.height = image.height;  
+            // 将图像绘制到canvas上  
+            ctx.drawImage(image, 0, 0, image.width, image.height);  
+        };  
+        // 设置src属性，浏览器会自动加载。  
+        image.src = src;  
+    };  
+    function loadImage(src){  
+        if(!src.type.match(/image.*/)){  
+            if(window.console){  
+                console.log("选择的文件类型不是图片: ", src.type);  
+            } else {  
+                window.confirm("只能选择图片文件");  
+            }  
+            return;  
+        }  
+  
+        // 创建 FileReader 对象 
+        var reader = new FileReader();  
+        // 绑定load事件自动回调函数  
+        reader.onload = function(e){  
+            render(e.target.result);  
+        };  
+        reader.readAsDataURL(src);  
+    };  
+    
+    function sendImage(){  
+      var canvas = document.getElementById("myCanvas");  
+      // 获取Base64编码后的图像数据，格式是字符串  
+      var dataurl = canvas.toDataURL("image/png");  
+      var imagedata =  encodeURIComponent(dataurl);  
+      var url = $("input[name='action']").val();  
+      var data = {  
+                imagename: "myImage.png",  
+                imagedata: imagedata  
+            };  
+      jQuery.ajax( {  
+        url : url,  
+        data : data,  
+        type : "POST",  
+        dataType: "json",  
+        complete : function(xhr,result) {  
+            var $tip2 = $("#tip2");  
+            if(!xhr){  
+                $tip2.text('网络连接失败!');  
+                return false;  
+            }  
+              
+            var text = xhr.responseText;  
+            if(!text){  
+                $tip2.text('网络错误!');  
+                return false;  
+            }  
+              
+            var json = eval("("+text+")");  
+            if(!json){  
+                $tip2.text('解析错误!');  
+                return false;  
+            } else {  
+                $tip2.text(json.message);  
+            }  
+            //console.dir(json);  
+            //console.log(xhr.responseText);  
+        }  
+      });  
+    };  
+    function init(){  
+        var target = document.getElementById("drop-target");  
+        target.addEventListener("dragover", function(e){e.preventDefault();}, true);  
+        target.addEventListener("drop", function(e){  
+            e.preventDefault();   
+            loadImage(e.dataTransfer.files[0]);  
+        }, true);  
+        var setheight = document.getElementById("setheight");  
+        var maxheight = document.getElementById("maxheight");  
+        setheight.addEventListener("click", function(e){  
+                var value = maxheight.value;  
+                if(/^\d+$/.test(value)){  
+                    MAX_HEIGHT = parseInt(value);  
+                }  
+                e.preventDefault();  
+            },true);  
+        var btnsend = document.getElementById("btnsend");  
+        btnsend.addEventListener("click", function(e){  
+            sendImage();  
+        },true);  
+    };  
+    window.addEventListener("DOMContentLoaded", function() {  
+        init();  
+    },false);  
